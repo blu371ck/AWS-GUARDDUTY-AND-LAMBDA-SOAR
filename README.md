@@ -1,27 +1,22 @@
-# AWS GuardDuty-Lambda SOAR 🛡️
+# AWS GuardDuty-Lambda SOAR: Automated Threat Response Pipeline
+A comprehensive, serverless Security Orchestration, Automation, and Response (SOAR) pipeline built on AWS to automatically detect and remediate security threats in near real-time.
 
-__AWS GuardDuty-Lambda SOAR__ is a complete, serverless Security Orchestration, Automation, and Response (SOAR) project for AWS. It automatically detects and responds to security threats identified by Amazon GuardDuty, enabling rapid containment of compromised resources.
+__Core Technologies__: AWS (Lambda, GuardDuty, EventBridge, EC2, EBS, SNS, SSM Parameter Store), Terraform, Python, Boto3, Pytest
 
-This project deploys all necessary infrastructure using Terraform and uses a custom Python library [aws-reflex](https://github.com/blu371ck/aws-reflex) deployed as an AWS Lambda Layer to execute remediation workflows.
+---
+## Project Summary
+This project automates the entire lifecycle of security threat response within an AWS environment. It addresses the critical need for rapid remediation by leveraging an event-driven, serverless architecture. When Amazon GuardDuty detects a potential compromise (e.g., an EC2 instance communicating with a malicious C2 server), the system automatically triggers a multi-step workflow to contain, preserve evidence from, and eradicate the threat, all without manual intervention. The result is a robust, cost-effective, and scalable solution that reduces the Mean Time to Response (MTTR) from hours to minutes.
 
-## Key Features
-
-- __Fully Automated Deployment__: All AWS infrastructure is managed via Terraform for repeatable, version-controlled deployments.
-- __Event-Driven & Serverless__: Built on AWS Lambda for a cost-effective, scalable, and low-maintenance SOAR solution.
-- __Rapid Threat Containment__: Automatically isolates EC2 instances, preserves evidence via snapshots, and terminates threats within minutes of detection.
-- __Secure & Extensible Python Library__: The core logic is a clean, object-oriented, and type-safe Python library that is easy to test and extend with new response handlers.
-- __Secure Configuration__: Manages all configuration (ARNs, IDs) via AWS SSM Parameter Store, avoiding hardcoded secrets.
-
-## How It Works
-
-1. __Detect__: Amazon GuardDuty detects a threat (e.g., an EC2 instance communicating with a C2 server) and generates a finding.
-2. __Trigger__: An Amazon EventBridge rule filters for GuardDuty findings and invokes the GuardDuty-SOAR-Responder Lambda function.
-3. __Orchestrate__: The Lambda function uses the aws-reflex library to identify the correct handler for the specific finding type.
-4. __Remediate__: The handler class executes a series of automated response steps using Boto3:
-5. __Contain__: The instance's security group is immediately changed to a "quarantine" group, blocking all traffic.
-6. __Preserve__: An EBS snapshot of the instance's root volume is created for forensic analysis.
-7. __Eradicate__: The compromised instance is terminated.
-8. __Notify__: A detailed report is sent to a security team via an SNS topic.
+## Key Contributions & Features
+- __Engineered an Event-Driven SOAR Pipeline__: Designed and deployed a serverless architecture using AWS Lambda and EventBridge. The solution actively monitors for GuardDuty findings, filters for specific threat types, and initiates an automated response workflow.
+- __Developed a Custom Python Remediation Library ([aws-reflex](https://github.com/blu371ck/aws-reflex))__: Architected and built a clean, object-oriented, and extensible Python library to orchestrate the response logic. The library is type-safe, unit-tested with pytest, and packaged as an AWS Lambda Layer for modularity and reuse.
+- __Implemented a Full Infrastructure as Code (IaC) Deployment__: Utilized Terraform to define and manage all required AWS infrastructure, including VPCs, EC2 instances, security groups, IAM roles, and serverless components. This ensures consistent, repeatable, and version-controlled deployments.
+- __Automated a Multi-Step Threat Remediation Workflow__: The core logic, executed by the Lambda function, performs the following sequence of actions upon detecting a threat:
+- __Containment__: Immediately isolates the compromised EC2 instance by dynamically reassigning it to a "quarantine" security group, blocking all inbound and outbound traffic.
+- __Preservation__: Automatically creates an EBS snapshot of the instance's root volume to preserve a point-in-time image for future forensic analysis.
+- __Eradication__: Terminates the compromised EC2 instance to remove the active threat from the environment.
+- __Notification__: Publishes a detailed report of the detected threat and all actions taken to a security team via an SNS topic and email subscription.
+- __Ensured Secure Configuration Management__: Implemented security best practices by managing all application configuration, such as ARNs and resource IDs, through the AWS SSM Parameter Store, eliminating hardcoded secrets and credentials from the codebase.
 
 ## Project Structure
 ```
@@ -38,6 +33,7 @@ aws-guardduty-lambda-soar/
     └── ...
 ```
 
+---
 ## Setup and Deployment
 
 ### Prerequisites
@@ -52,17 +48,24 @@ aws-guardduty-lambda-soar/
 
 This project will create an SNS topic and subscribe your email to it for notifications. To avoid hardcoding your email, set it as an environment variable.
 
-In Windows PowerShell:
+In PowerShell:
 
 ```powershell
 $env:TF_VAR_subscriber_email = "your-email@example.com"
 ```
 
+Bash:
+
+```bash
+export TF_VAR_subscriber_email="your-email@example.com"
+```
+
 ### Step 2: Package the Python Library
 
 The aws-reflex library must be packaged as a .zip file to be used as a Lambda Layer. We provide the known-working ZIP in this repo, but if you make any changes
-you will need to rebuild the package and zip it into a Layer/Lambda structure.
-1. Navigate to the project root.
+you will need to rebuild the package and zip it into a Layer/Lambda structure. If your looking to just run the demonstration, then the below steps can be ignored
+
+1. Navigate to the project root of `aws-reflex.
 2. Install build dependencies and build the wheel file:
 
 ```
@@ -85,7 +88,7 @@ zip -r ../aws_reflex_layer.zip .
 cd ..
 ```
 
-This will create the aws_reflex_layer.zip file inside the root layers directory.
+This will create the `aws_reflex_layer.zip` file inside the root layers directory.
 
 ### Step 3: Deploy the Infrastructure
 
@@ -102,41 +105,7 @@ When prompted, review the plan and type yes to deploy. This will create the VPC,
 
 ### Testing the Automation
 
-After deployment, you can test the end-to-end workflow by generating a sample GuardDuty finding.
-
-Get your GuardDuty Detector ID:
-
-```
-aws guardduty list-detectors --query 'DetectorIds[0]' --output text
-```
-
-Generate a Sample C2 Finding:
-Replace <your_detector_id> with the ID from the previous step.
-
-```
-aws guardduty create-sample-findings \
-    --detector-id <your_detector_id> \
-    --finding-types "Backdoor:EC2/C&CActivity.B"
-
-```
-
-This will trigger the EventBridge rule and invoke your Lambda function. You can monitor the execution in the CloudWatch Log Group for the GuardDuty-SOAR-Responder function and should receive an email notification from SNS.
-
-### Testing the Library
-
-Unit tests for the aws-reflex library are located in the tests/ directory and use pytest.
-
-Install development dependencies:
-
-```
-uv pip install pytest pytest-mock boto3-stubs
-```
-
-Run tests from the project root:
-
-```
-pytest
-```
+After deployment, you can test the end-to-end workflow by performing actions on the private EC2 instance, like shown in the demonstration below.
 
 ## Demonstration
 This section walks through a live demonstration of the Cloud Warden SOAR pipeline, from initial threat simulation to final automated remediation.
