@@ -7,6 +7,12 @@ __Core Technologies__: AWS (Lambda, GuardDuty, EventBridge, EC2, EBS, SNS, SSM P
 ## Project Summary
 This project automates the entire lifecycle of security threat response within an AWS environment. It addresses the critical need for rapid remediation by leveraging an event-driven, serverless architecture. When Amazon GuardDuty detects a potential compromise (e.g., an EC2 instance communicating with a malicious C2 server), the system automatically triggers a multi-step workflow to contain, preserve evidence from, and eradicate the threat, all without manual intervention. The result is a robust, cost-effective, and scalable solution that reduces the Mean Time to Response (MTTR) from hours to minutes.
 
+## Network Diagram
+![diagram](./images/diagram.png)
+
+## Process Flow
+![process flow](./images/Flowchart.png)
+
 ## Key Contributions & Features
 - __Engineered an Event-Driven SOAR Pipeline__: Designed and deployed a serverless architecture using AWS Lambda and EventBridge. The solution actively monitors for GuardDuty findings, filters for specific threat types, and initiates an automated response workflow.
 - __Developed a Custom Python Remediation Library ([aws-reflex](https://github.com/blu371ck/aws-reflex))__: Architected and built a clean, object-oriented, and extensible Python library to orchestrate the response logic. The library is type-safe, unit-tested with pytest, and packaged as an AWS Lambda Layer for modularity and reuse.
