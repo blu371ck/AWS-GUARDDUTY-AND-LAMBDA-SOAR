@@ -68,33 +68,7 @@ export TF_VAR_subscriber_email="your-email@example.com"
 
 ### Step 2: Package the Python Library
 
-The aws-reflex library must be packaged as a .zip file to be used as a Lambda Layer. We provide the known-working ZIP in this repo, but if you make any changes
-you will need to rebuild the package and zip it into a Layer/Lambda structure. If your looking to just run the demonstration, then the below steps can be ignored
-
-1. Navigate to the project root of `aws-reflex.
-2. Install build dependencies and build the wheel file:
-
-```
-uv pip install build
-python -m build
-```
-
-3. Create the layer package:
-
-```
-# Create the required directory structure
-mkdir -p layers/python
-
-# Unzip the wheel file into the target directory
-unzip dist/aws_reflex-*.whl -d layers/python
-
-# Create the final zip file
-cd layers
-zip -r ../aws_reflex_layer.zip .
-cd ..
-```
-
-This will create the `aws_reflex_layer.zip` file inside the root layers directory.
+The [AWS Reflex](https://github.com/blu371ck/aws-reflex) library is already included as a ZIP file in the `layers` directory of this repository. The Lambda function that uses the library can be found in the `lambda_code` directory.
 
 ### Step 3: Deploy the Infrastructure
 
